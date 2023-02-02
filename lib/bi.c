@@ -2454,7 +2454,6 @@ void	bi_div1(
 	while(bi_cmp(a, alen, b, blen) >= 0)
 	{
 		bi_sub1(a, &alen, b, blen);
-//		printf("========= %lld %lld\n", alen, blen);
 		bi_inc(q, &qlen);
 	}
 	*palen = alen;
