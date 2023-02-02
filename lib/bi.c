@@ -2325,8 +2325,10 @@ void	bi_div1(
 	x1len = blen;
 	memcpy(x1, b, x1len*sizeof(dig_t));
 
-#define		NR_MIN_B_LEN		8192
-	if(!(blen >= NR_MIN_B_LEN && blen >= alen/3 && blen <= 2*alen/3))
+#define		NR_MIN_A_LEN		8192
+//#define		NR_MIN_GAP			128
+#define		NR_MAX_INIT_PREC	300
+	if(!(alen >= NR_MIN_A_LEN && blen >= alen/3 && blen <= (2*alen)/3))
 	{
 		x2len = alen;
 		memcpy(x2, a, x2len*sizeof(dig_t));
@@ -2350,7 +2352,14 @@ void	bi_div1(
 		memcpy(part_b, b, blen*sizeof(dig_t));
 		part_b_len = blen;
 
-		trunc_len = blen - NR_MIN_B_LEN;
+		if(blen > NR_MAX_INIT_PREC)
+		{
+			trunc_len = blen - NR_MAX_INIT_PREC;
+		}
+		else
+		{
+			trunc_len = 0;
+		}
 		if(trunc_len > 0)
 		{
 			for(j = 0; j < trunc_len && !part_b[j]; j++)
