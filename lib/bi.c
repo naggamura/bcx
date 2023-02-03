@@ -2944,7 +2944,7 @@ int		bi_init(int quiet)
 			fprintf(stderr, "================================\n");
 			if(str)
 			{
-				fprintf(stderr, " BC_PARAL_CNT = %s\n", str);
+				fprintf(stderr, " BC_PARAL_CNT = %d\n", __g_paral_cnt);
 			}
 			fprintf(stderr, " %d-threaded multiplication\n", __g_paral_cnt);
 			fprintf(stderr, "================================\n");
