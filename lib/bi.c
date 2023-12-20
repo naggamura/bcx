@@ -2406,7 +2406,7 @@ void	bi_div1(
 		}
 	}
 
-	if(1)//alen < NEWTON_RAPHSON_MIN_A_LEN || blen < NEWTON_RAPHSON_MIN_AB_DIFF || alen - blen < NEWTON_RAPHSON_MIN_AB_DIFF )
+	if(alen < NEWTON_RAPHSON_MIN_A_LEN || blen < NEWTON_RAPHSON_MIN_AB_DIFF || alen - blen < NEWTON_RAPHSON_MIN_AB_DIFF )
 	{
 		__basic_div(a, palen, b, blen, q, pqlen);
 		return;
