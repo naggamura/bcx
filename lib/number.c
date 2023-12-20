@@ -1147,7 +1147,15 @@ bc_sqrt (bc_num *num, len_t dec_scale)
 		// a * base^(2*res_scale - nscale) == n * base^(2*res_scale)
 		bi_sqrt(a, alen, 2*res_scale - nscale, n->n_value, &rlen);
 
-		n->n_len = rlen - res_scale;
+		if(rlen <= res_scale)
+		{
+			n->n_len = 0;
+			memset(n->n_value + rlen, 0, (res_scale - rlen)*sizeof(dig_t));
+		}
+		else
+		{
+			n->n_len = rlen - res_scale;
+		}
 		n->n_dec_scale = MAX((*num)->n_dec_scale, dec_scale);
 		bc_clear_extra_fraction(n);
 	}

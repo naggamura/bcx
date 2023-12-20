@@ -362,6 +362,7 @@ static void		bi_lshift(dig_t* a, len_t* alen, len_t d)
 }
 #endif
 
+#if 0
 static void		bi_rshift(dig_t* a, len_t* alen, len_t d)
 {
 	if(UNLIKELY(*alen <= 0 || d <= 0))
@@ -384,6 +385,7 @@ static void		bi_rshift(dig_t* a, len_t* alen, len_t d)
 		*alen -= d;
 	}
 }
+#endif
 
 void	bi_inc(dig_t* a, len_t* alen)
 {
@@ -749,50 +751,51 @@ void	bi_sub_shift(
 void	bi_elementary_mul(
 	const dig_t* a, len_t alen,
 	const dig_t* b, len_t blen,
-	dig_t* c, len_t* clen)
+	dig_t* c, len_t* pclen)
 {
-	dig_t	*ta;
-	len_t	i, j;
+	ddig_t digdig, bdig;
+	len_t i, j, k;
 
-	// for performance
-	if(alen < blen)
+	if (!alen || !blen)
 	{
-		const dig_t*	td;
-		len_t	tl;
+		*pclen = 0;
+		return;
+	}
 
-		td = a;
+	if (alen < blen)
+	{
+		const dig_t *tp;
+		len_t tl;
+
+		tp = a;
 		a = b;
-		b = td;
+		b = tp;
 
 		tl = alen;
 		alen = blen;
 		blen = tl;
 	}
 
-	ta = bi_malloc(alen+1, __LINE__);
-
-	*clen = 0;
-	for(i = 0; i < blen; i++)
+	memset(c, 0, (alen + blen) * sizeof(dig_t));
+	for (i = 0; i < blen; i++)
 	{
-		ddig_t	bb = b[i];
-		if(bb)
+		bdig = b[i];
+		if (bdig)
 		{
-			ddig_t	d = 0;
-
-			for(j = 0; j < alen; j++)
+			digdig = 0;
+			for (j = 0, k = i; j < alen; j++, k++)
 			{
-				d += a[j]*bb;
-				ta[j] = d%RADIX;
-				d /= RADIX;
+				digdig += ((ddig_t)c[k]) + ((ddig_t)a[j]) * bdig;
+				c[k] = (dig_t)(digdig % RADIX);
+				digdig /= RADIX;
 			}
-			if(d)
+			if (digdig)
 			{
-				ta[j++] = d;
+				c[k++] = (dig_t)digdig;
 			}
-			bi_add_shift(c, clen, ta, j, i);
 		}
 	}
-	bi_free(ta);
+	*pclen = k;
 }
 
 static void		__mul_karatsuba(
@@ -980,6 +983,7 @@ static void		__sadd(int* asign, dig_t* a, len_t* alen, int bsign, const dig_t* b
 	}
 }
 
+#if 0
 static void		__mul1_one_digit(
 	dig_t* a, len_t* alen,
 	dig_t b)
@@ -999,6 +1003,7 @@ static void		__mul1_one_digit(
 		(*alen)++;
 	}
 }
+#endif
 
 static void		__mul2_one_digit(
 	const dig_t* a, len_t alen,
@@ -2115,19 +2120,20 @@ void	bi_mul2(
 	__mul(a, alen, b, blen, c, clen);
 }
 
-/*
+#if 0
 static void pppp(const dig_t* n, len_t len)
 {
 	len_t	i;
-	//for(i = len-1; i >= 0; i--)
-	for(i = 0; i < len; i++)
+	for(i = len-1; i >= 0; i--)
+	//for(i = 0; i < len; i++)
 	{
 		printf("%08d ", n[i]);
 	}
 	printf("\n");
 }
-*/
+#endif
 
+#if 0
 /*
 2 <= d < RADIX
 */
@@ -2174,6 +2180,7 @@ static void		__div2_one_digit(dig_t* a, len_t* palen, dig_t d, dig_t* q, len_t* 
 	*pqlen = i+1;
 	*palen = alen;
 }
+#endif
 
 /*
 a > b
@@ -2181,16 +2188,17 @@ blen >= 2
 capacity of a >= *palen+1
 a, b can be rescaled.
 */
-static void		__div_basic(
-	dig_t* a, len_t* palen,
-	dig_t* b, len_t blen,
-	dig_t* q, len_t* pqlen)
+static void		__basic_div(
+	dig_t* restrict a, len_t* restrict palen,
+	const dig_t* restrict b, len_t blen,
+	dig_t* restrict q, len_t* restrict pqlen)
 {
 	len_t	i, ttlen, gap;
 	len_t	alen = *palen;
 	dig_t	*tt;
 	ddig_t	divisor, m, dd, p10;
 
+/*
 	m = b[blen-1];
 	while(m < RADIX/10)
 	{
@@ -2203,7 +2211,8 @@ static void		__div_basic(
 		__mul1_one_digit(a, &alen, p10);
 		__mul1_one_digit(b, &blen, p10);
 	}
-
+*/
+	p10 = 1;
 	gap = alen - blen;
 	tt = bi_malloc(blen+1, __LINE__);
 
@@ -2264,157 +2273,195 @@ static void		__div_basic(
 	bi_free(tt);
 }
 
+#if 0
+// 0 < b <= a
+static void
+__basic_div(
+	dig_t* restrict a, len_t* restrict palen,
+	const dig_t* restrict b, len_t blen,
+	dig_t* restrict c, len_t* restrict pclen)
+{
+	dig_t* temp;
+	dig_t* aa;
+	len_t i, j, alen = *palen, aalen, templen, diff;
+
+	temp = bi_malloc(blen+1, __LINE__);
+
+	aalen = blen;
+	diff = alen - blen;
+	for(i = diff; i >= 0; i--)
+	{
+		ddig_t res_dig = 0;
+		aa = a+i;
+		while(1)
+		{
+			ddig_t ddig;
+			int cmp = 0;
+
+			if(aalen > blen)
+			{
+				cmp = 1;
+				ddig = ( ((ddig_t)aa[blen])*RADIX + aa[blen-1] ) / (b[blen-1]+1);
+			}
+			else if(aalen == blen)
+			{
+				ddig = ((ddig_t)aa[blen-1]) / ( b[blen-1]+1 );
+				if(ddig <= 0)
+				{
+					ddig = 1;
+				}
+				for(j = blen-1; j >= 0; j--)
+				{
+					if(aa[j] > b[j])
+					{
+						cmp = 1;
+						break;
+					}
+					if(aa[j] < b[j])
+					{
+						cmp = -1;
+						break;
+					}
+				}
+			}
+			else
+			{
+				ddig = 0;
+				cmp = -1;
+			}
+			if(cmp < 0)
+			{
+				break;
+			}
+
+			// aa >= dig * b
+			{
+				ddig_t d = 0;
+
+				templen = blen;
+				for(j = 0; j < templen; j++)
+				{
+					d += ((ddig_t)b[j])*ddig;
+					temp[j] = (dig_t)(d % RADIX);
+					d /= RADIX;
+				}
+				if(d)
+				{
+					temp[templen++] = (dig_t)d;
+				}
+			}
+			bi_sub1(aa, &aalen, temp, templen);
+			res_dig += ddig;
+		}
+		aalen++;
+		c[i] = (dig_t)res_dig;
+	}
+	bi_free(temp);
+	for(i = diff; i >= 0 && !c[i]; i--)
+	{
+		;
+	}
+	*pclen = i+1;
+	for(i = aalen-1; i >= 0 && a[i]; i--)
+	{
+		;
+	}
+	aalen = i+1;
+}
+#endif
+
+#if 1
+	#define NEWTON_RAPHSON_MIN_A_LEN 10000
+	#define NEWTON_RAPHSON_MIN_AB_DIFF 1000
+	#define MAX_BASIC_DIV_B_LEN 50
+#else	// for test
+	#define NEWTON_RAPHSON_MIN_A_LEN 1000
+	#define NEWTON_RAPHSON_MIN_AB_DIFF 100
+	#define MAX_BASIC_DIV_B_LEN 50
+#endif
+
 void	bi_div1(
 	dig_t* a, len_t* palen,
 	const dig_t* b, len_t blen,
 	dig_t* q, len_t* pqlen)
 {
-	len_t	alen = *palen, qlen = *pqlen;
-	dig_t*	x1;
-	dig_t	*x2;
-	dig_t*	tnum;
-	len_t	i, j;
-	len_t	x1len, x2len, tnumlen, L;
+	dig_t *y1, *y2, *tnum;
+	len_t y1len, y2len, tnumlen;
+	len_t alen = *palen, qlen;
+	len_t i, j, prec;
 
-	// b must NOT be zero.
-	int		d = bi_cmp(a, alen, b, blen);
-
-	if(d < 0)
 	{
-		*pqlen = 0;
-		return;
-	}
-	if(0 == d)
-	{
-		*palen = 0;
-		q[0] = 1;
-		*pqlen = 1;
-		return;
-	}
-	if(1 == alen)
-	{
-		q[0] = a[0]/b[0];
-		*pqlen = 1;
-		a[0] %= b[0];
-		*palen = (a[0] > 0);
-		return;
-	}
-	if(1 == blen)
-	{
-		if(1 == b[0])
+		int cmp = bi_cmp(a, alen, b, blen);
+		if(cmp < 0)
 		{
-			memcpy(q, a, alen*sizeof(dig_t));
-			*pqlen = alen;
+			*pqlen = 0;
+			return;
+		}
+		if(cmp == 0)
+		{
+			q[0] = 1;
+			*pqlen = 1;
 			*palen = 0;
+			return;
 		}
-		else
-		{
-			__div2_one_digit(a, palen, b[0], q, pqlen);
-		}
+	}
+
+	if(1)//alen < NEWTON_RAPHSON_MIN_A_LEN || blen < NEWTON_RAPHSON_MIN_AB_DIFF || alen - blen < NEWTON_RAPHSON_MIN_AB_DIFF )
+	{
+		__basic_div(a, palen, b, blen, q, pqlen);
 		return;
 	}
 
-	// blen >= 2
+	// Now, 2 <= len(b) < len(a)
 
-	L = alen;
+	prec = alen;
 
-	x1 = bi_malloc(L+1, __LINE__);
-	x2 = bi_malloc(2*L+1, __LINE__);
-	tnum = bi_malloc(L+1, __LINE__);
+	y1 = bi_malloc(prec+1, __LINE__);
+	y2 = bi_malloc(2*prec+1, __LINE__);
+	tnum = bi_malloc(prec+1, __LINE__);
 
-	x1len = blen;
-	memcpy(x1, b, x1len*sizeof(dig_t));
+	// tnum <-- 1 * R^prec
+	memset(tnum, 0, prec*sizeof(dig_t));
+	tnum[prec] = 1;
+	tnumlen = prec+1;
 
-#define		NR_MIN_A_LEN		20000
-#define		NR_MAX_INIT_PREC	1000
-	if(!(alen >= NR_MIN_A_LEN && blen >= alen/3 && blen <= (2*alen)/3))
+	// Initial estimation of (1/b)*R^prec
+	if(blen <= MAX_BASIC_DIV_B_LEN)
 	{
-		x2len = alen;
-		memcpy(x2, a, x2len*sizeof(dig_t));
-		__div_basic(x2, &x2len, x1, x1len, q, pqlen);
-		memcpy(a, x2, x2len*sizeof(dig_t));
-		*palen = x2len;
-		goto done;
+		__basic_div(tnum, &tnumlen, b, blen, y1, &y1len);
 	}
-
-// Newton Raphson method.
+	else
 	{
-		dig_t	*one, *part_b;
-		len_t	one_len, part_b_len, trunc_len;
+		dig_t tb[MAX_BASIC_DIV_B_LEN+1];
+		len_t tblen, trunc_len = blen - MAX_BASIC_DIV_B_LEN;
 
-		one = tnum;
-		memset(one, 0, L*sizeof(dig_t));
-		one[L] = 1;
-		one_len = L+1;
-
-		part_b = x1;
-		memcpy(part_b, b, blen*sizeof(dig_t));
-		part_b_len = blen;
-
-		if(blen > NR_MAX_INIT_PREC)
+		tblen = MAX_BASIC_DIV_B_LEN;
+		memcpy(tb, b + trunc_len, tblen*sizeof(dig_t));
+		for(i = 0; i < trunc_len && !b[i]; i++) { ; }
+		if(i < trunc_len)
 		{
-			trunc_len = blen - NR_MAX_INIT_PREC;
+			bi_inc(tb, &tblen);
 		}
-		else
+		__basic_div(tnum, &tnumlen, tb, tblen, y1, &y1len);
+		for(i = trunc_len, j = 0; i < y1len; i++, j++)
 		{
-			trunc_len = 0;
+			y1[j] = y1[i];
 		}
-		if(trunc_len > 0)
-		{
-			for(j = 0; j < trunc_len && !part_b[j]; j++)
-			{
-				;
-			}
-			part_b += trunc_len;
-			part_b_len -= trunc_len;
-			if(j < trunc_len)
-			{
-				for(i = 0; i < part_b_len && RADIX-1 == part_b[i]; i++)
-				{
-					part_b[i] = 0;
-				}
-				if(i < part_b_len)
-				{
-					part_b[i]++;
-				}
-				else
-				{
-					part_b[i++] = 1;
-					part_b_len = i;
-				}
-			}
-		}
-
-		for(j = 0; !part_b[j]; j++)
-		{
-			;
-		}
-		__div_basic(one, &one_len, part_b+j, part_b_len-j, x2, &x2len);
-		if(j > 0)
-		{
-			x2len -= j;
-			for(i = 0; i < x2len; i++)
-			{
-				x2[i] = x2[i+j];
-			}
-			//memcpy(x2, x2+j, x2len*sizeof(dig_t));
-		}
-
-		x1len = x2len - trunc_len;
-		memcpy(x1, x2+trunc_len, x1len*sizeof(dig_t));
+		y1len = j;
 	}
+	// ( len(b) < len(a) ) ==> y1 > 0
 
 	while(1)
 	{
-		// t1 = b*x1;
-		bi_mul2(b, blen, x1, x1len, tnum, &tnumlen);
+		// tnum <-- b*y1;
+		bi_mul2(b, blen, y1, y1len, tnum, &tnumlen);
 
-		// t1 = 2-b*x1;
-		for(i = 0; 0 == tnum[i]; i++)
+		// tnum = 2*R^prec - b*y1;
+		for(i = 0; i < tnumlen && 0 == tnum[i]; i++)
 		{
 			;
 		}
-		if(i < L)
+		if(i < prec)
 		{
 			tnum[i] = RADIX - tnum[i];
 			i++;
@@ -2422,49 +2469,59 @@ void	bi_div1(
 			{
 				tnum[i] = RADIX-1 - tnum[i];
 			}
-			for(; i < L; i++)
+			for(; i < prec; i++)
 			{
 				tnum[i] = RADIX-1;
 			}
 		}
-		tnum[L] = 1;
-		tnumlen = L+1;
+		tnum[prec] = 1;
+		tnumlen = prec+1;
 
-		// x2 = x1*(2-b*x1)
-		bi_mul2(x1, x1len, tnum, tnumlen, x2, &x2len);
+		// y2 <-- y1*( 2*R^prec - b*y1 )
+		bi_mul2(y1, y1len, tnum, tnumlen, y2, &y2len);
 
-		//assert(x2len > L);
-
-		// scale down x2 by L
-		if(UNLIKELY(bi_cmp(x1, x1len, x2+L, x2len-L) >= 0))
+		// new approx. <= prev approx --> break
+		if(bi_cmp(y2+prec, y2len-prec, y1, y1len) <= 0)
 		{
 			break;
 		}
 
-		x1len = x2len - L;
-		memcpy(x1, x2+L, x1len*sizeof(dig_t));
+		// y1 <-- y1*( 2*R^prec - b*y1 ) * R^(-prec)
+		y1len = y2len-prec;
+		memcpy(y1, y2+prec, y1len*sizeof(dig_t));
 	}
 
-	bi_mul2(a, alen, x1, x1len, x2, &x2len);
+	// y2 <-- a * { approx. (1/b)*R^prec }
+	// y2 := { approx. (a/b) * R^prec }
+	bi_mul2(a, alen, y1, y1len, y2, &y2len);
 
-	qlen = x2len - L;
-	memcpy(q, x2+L, qlen*sizeof(dig_t));
+	// cc <-- { approx. (a/b) * R^prec } * R^(-prec)
+	// cc := ( approx. a/b }
+	qlen = y2len-prec;
+	memcpy(q, y2+prec, qlen*sizeof(dig_t));
 
-	bi_mul2(b, blen, q, qlen, x1, &x1len);
-	bi_sub1(a, &alen, x1, x1len);
+	// y1 <-- b * ( approx. a/b }
+	// y1 := { approx. a }
+	bi_mul2(b, blen, q, qlen, y1, &y1len);
 
-	// Actually at most once if b divides a
+	// aa -= { approx. a }
+	bi_sub1(a, &alen, y1, y1len);
+
+	// At most once...
 	while(bi_cmp(a, alen, b, blen) >= 0)
 	{
+		// aa -= b
 		bi_sub1(a, &alen, b, blen);
+		
+		// cc += 1
 		bi_inc(q, &qlen);
 	}
 	*palen = alen;
 	*pqlen = qlen;
-done:
+
 	bi_free(tnum);
-	bi_free(x2);
-	bi_free(x1);
+	bi_free(y2);
+	bi_free(y1);
 }
 
 void	bi_div2(
@@ -2494,15 +2551,14 @@ void	bi_div2(
 	bi_free(rr);
 }
 
-static dig_t	__simple_sqrt(ddig_t a)
+static ddig_t	__simple_sqrt(ddig_t a)
 {
-	dig_t	u = 0, v = RADIX, m;
-	ddig_t	d;
+	ddig_t	u = 0, v = RADIX, m, d;
 
 	while(u <= v)
 	{
 		m = (u+v)/2;
-		d = ((ddig_t)m)*m;
+		d = m*m;
 		if(d < a)
 		{
 			u = m+1;
@@ -2528,202 +2584,236 @@ static dig_t	__simple_sqrt(ddig_t a)
 
 	divide by 2 : Multiply by RADIX/2 and shift right by 1.
 
-	No division envolved !!!
+	No long division in iteration.
+*/
+
+
+/*
+scale = 66;
+sqrt(1208925819614629174706176);
+
+bi_div1 에서 에러 났었음.
 */
 
 // shift >= 0
 // sqrt( a * RADIX^shift )
-void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* rlen)
+void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 {
-	dig_t	*x1, *x2, *t;
-	len_t	i, x1len, x2len;
-	len_t	ss;
+	dig_t *num1, *num2, *temp, *shell;
+	len_t i, rlen, a_len, num1len, num2len, templen, shelllen;
+	ddig_t dd, sqrt_dd;
+	len_t trunc_len;
 
 	if(alen <= 0)
 	{
-		*rlen = 0;
+		*prlen = 0;
 		return;
 	}
-	if(0 == shift)
+
+	// Let A = aa * BASE^a_shift
+	a_len = alen + shift; // length of A
+
+	// Compose an integer <= { (1 / sqrt(A)) * BASE^a_len } as large as
+	// possible.
+	// First, compose an integer >= sqrt(A) as small as possible.
+
+	if (a_len & 1) // odd
 	{
-		if(1 == alen)
-		{
-			r[0] = __simple_sqrt(a[0]);
-			*rlen = 1;
-			return;
-		}
-		if(2 == alen)
-		{
-			r[0] = __simple_sqrt(((ddig_t)RADIX)*a[1] + a[0]);
-			*rlen = 1;
-			return;
-		}
+		trunc_len = a_len - 1;
+		dd = (ddig_t)a[alen - 1];
 	}
-
-	ss = (alen+shift+1) + 2 + 4;
-	x1 = bi_malloc(2*(ss+1), __LINE__);
-	x2 = bi_malloc(2*(ss+1), __LINE__);
-
+	else
 	{
-		int		d;
-		len_t	iz;
-		dig_t	rt;
-		ddig_t	m;
-
-		// alen > 0 here.
-		m = a[alen-1];
-		if((alen+shift)%2)	// odd length
+		trunc_len = a_len - 2;
+		if (alen >= 2)
 		{
-			iz = (alen+shift)/2;
-		}
-		else	// even length
-		{
-			iz = (alen+shift)/2 - 1;
-			m *= RADIX;
-			if(alen >= 2)
-			{
-				m += a[alen-2];
-			}
-		}
-
-		rt = __simple_sqrt(m);
-
-		for(i = 0; i < iz; i++)
-		{
-			x1[i] = 0;
-		}
-		x1[i++] = rt;
-		x1len = i;
-
-		bi_mul2(x1, x1len, x1, x1len, x2, &x2len);
-		d = __cmp_shift(x2, x2len, a, alen, shift);
-		if(d < 0)
-		{
-			// rt = ceil(sqrt(m+1));
-			m++;
-			rt = __simple_sqrt(m);
-			if(((ddig_t)rt)*((ddig_t)rt) < m)
-			{
-				rt++;
-			}
-		}
-		else if(0 == d)	// Lucky!
-		{
-			for(i = 0; i < x1len; i++)
-			{
-				r[i] = x1[i];
-			}
-			*rlen = x1len;
-			bi_free(x1);
-			bi_free(x2);
-			return;
-		}
-
-		// rt * R^iz
-		if(rt <= 1)	// Must be 1. Actually, should not reach here.
-		{
-			// 1 * R^(-iz)
-			x1len = ss-iz+1;
-			i = x1len-1;
-			x1[i--] = 1;
-			while(i >= 0)
-			{
-				x1[i--] = 0;
-			}
+			dd = ((ddig_t) a[alen - 1]) * RADIX + ((ddig_t) a[alen - 2]);
 		}
 		else
 		{
-			// R/rt * R^(-(iz+1))
-			x1len = ss-(iz+1)+1;
-			i = x1len-1;
-			x1[i--] = RADIX/rt;
-			while(i >= 0)
-			{
-				x1[i--] = 0;
-			}
+			dd = ((ddig_t) a[alen - 1]) * RADIX + ((ddig_t) 0);
 		}
 	}
+	sqrt_dd = __simple_sqrt(dd);
 
-	x2len = 0;
-
-	while(bi_cmp(x1, x1len, x2, x2len))
+	// a : small integer and scale is 0
+	if (a_len <= 2)
 	{
-		// Compute x <- x*(3-a*x^2)/2
+		r[0] = (dig_t)sqrt_dd;
+		*prlen = 1;
+		return;
+	}
 
-		// x2 = 3 - a*x1^2
-		for(i = 0; i < alen; i++)
-		{
-			x2[i+shift] = a[i];
-		}
-		for(i = 0; i < shift; i++)
-		{
-			x2[i] = 0;
-		}
-		x2len = alen;
-		bi_mul1(x2+shift, &x2len, x1, x1len);
-		bi_mul1(x2+shift, &x2len, x1, x1len);
-		x2len += shift;
-		bi_rshift(x2, &x2len, ss);
-	
-		for(i = 0; 0 == x2[i]; i++)
+	// aa.len >= 3
+
+	num1len = a_len/2 + 2;
+	num2len = num1len + num1len;
+	templen = a_len + num2len;
+	// temp.len = a_len + a_len + 1 >= a_len + 4
+	// Enough space for ( flr(sqrt(A)) + 1 )^2
+
+	// 2*a_len + 1 + 2*aa.len + 1 + 1 + 1
+
+	num1 = bi_malloc(num1len, __LINE__);
+	num2 = bi_malloc(num2len, __LINE__);
+	temp = bi_malloc(templen, __LINE__);
+
+//printf("tempcap = %lu, num1cap = %lu, num2cap = %lu\n", temp.cap, num1.cap, num2.cap);
+
+	num2len = trunc_len / 2;
+	memset(num2, 0, num2len * sizeof(dig_t));
+	if (sqrt_dd * sqrt_dd < dd)
+	{
+		sqrt_dd += 1;
+	}
+	else
+	{
+		for (i = 0; i < trunc_len && !a[i]; i++)
 		{
 			;
 		}
-		x2[i] = RADIX - x2[i];
-		for(i++; i < x2len; i++)
+		if (i < trunc_len)
 		{
-			x2[i] = RADIX-1 - x2[i];
+			sqrt_dd += 1;
 		}
-		for(; i < ss; i++)
+	}
+	if (sqrt_dd < RADIX)
+	{
+		num2[num2len++] = (dig_t)sqrt_dd;
+	}
+	else
+	{
+		num2[num2len++] = 0;
+		num2[num2len++] = 1;
+	}
+
+	// BASE^a_len
+	memset(temp, 0, a_len * sizeof(dig_t));
+	temp[a_len] = 1;
+	templen = a_len + 1;
+
+	// The only one long division.
+	// Initial estimation of flr ( (1/sqrt(A)) * BASE^a_len )
+//pppp(temp, templen);
+//pppp(num2, num2len);
+	bi_div1(temp, &templen, num2, num2len, num1, &num1len);
+//pppp(num1, num1len);
+//getchar();
+//printf("a->len = %lu, a->cap = %lu, b->len = %lu, b->cap = %lu\n", a->len, a->cap, b->len, b->cap);
+
+	while (1)
+	{
+		// x^2
+		bi_mul2(num1, num1len, num1, num1len, num2, &num2len);
+
+		// aa * x^2
+		bi_mul2(a, alen, num2, num2len, temp, &templen);
+
+		// ( aa * x^2 ) / BASE^(a_len - a_shift)
+		// == ( aa * BASE^a_shift * x^2 ) / BASE^a_len
+		// == A * x^2 * BASE^(-alen)
+		num2len = templen - (a_len - shift);
+		memcpy(num2, temp + (a_len - shift), num2len * sizeof(dig_t));
+
+		// 3*BASE^a_len - A*x^2*BASE^(-alen)
+		for (i = 0; i < a_len && !num2[i]; i++)
 		{
-			x2[i] = RADIX-1;
+			;
 		}
-		x2[ss] = 2;
-		x2len = ss+1;
-
-		// x2 = (x2*x1)/2
-		bi_mul1(x2, &x2len, x1, x1len);
-		bi_rshift(x2, &x2len, ss);
-		__div_by_2(x2, &x2len);
-
-		t = x1;
-		x1 = x2;
-		x2 = t;
-		i = x1len;
-		x1len = x2len;
-		x2len = i;
-	}
-
-	bi_mul2(a, alen, x2, x2len, x1+shift, &x1len);
-	for(i = 0; i < shift; i++)
-	{
-		x1[i] = 0;
-	}
-	x1len += shift;
-	for(i = ss; i < x1len; i++)
-	{
-		r[i-ss] = x1[i];
-	}
-	*rlen = x1len - ss;
-	bi_free(x1);
-
-	while(1)
-	{
-		// Actually, this block runs just once.
-		bi_inc(r, rlen);
-		bi_mul2(r, *rlen, r, *rlen, x2, &x2len);
-		i = __cmp_shift(x2, x2len, a, alen, shift);
-		if(i > 0)
+		if (i < a_len)
 		{
-			bi_dec(r, rlen);
+			num2[i] = RADIX - num2[i];
+			i++;
+			for (; i < num2len; i++)
+			{
+				num2[i] = (RADIX - 1) - num2[i];
+			}
+			for (; i < a_len; i++)
+			{
+				num2[i] = RADIX - 1;
+			}
+		}
+		num2[a_len] = 2;
+		num2len = a_len + 1;
+
+		// x*( 3*BASE^a_len - A*x^2*BASE^(-alen) )
+		bi_mul2(num1, num1len, num2, num2len, temp, &templen);
+
+		// ( x*( 3*BASE^a_len - A*x^2*BASE^(-alen) ) ) / 2
+		__div_by_2(temp, &templen);
+
+		// ( (x*(3*BASE^a_len - A*x^2*BASE^(-alen)))/2 ) * BASE^(-alen)
+		shelllen = templen - a_len;
+		shell = temp + a_len;
+
+		// flr( ( y*(3*BASE^a_len - flr(A*y^2*BASE^(-a_len)) ) / 2 ) * BASE^(-a_len) )
+		//
+		// is equal to or greater by 1 than
+		//
+		// flr( ( y*(3*BASE^(2*a_len) - A*x^2 ) / 2 ) * BASE^(-2*a_len) )
+		//
+		// Proof --> sqrt_2.png
+		// So, decrease 1
+		bi_dec(shell, &shelllen);
+
+		if (bi_cmp(shell, shelllen, num1, num1len) <= 0)
+		{
 			break;
 		}
-		else if(0 == i)
+
+		num1len = shelllen;
+		memcpy(num1, shell, num1len * sizeof(dig_t));
+	}
+
+	// b <-- ( x * aa ) / BASE^(a_len - a_shift)
+	// == ( aa * BASE^a_shift * x ) / BASE^a_len
+	// == A * x * BASE^(-alen)
+	// --> about sqrt(A)
+	bi_mul2(a, alen, num1, num1len, temp, &templen);
+	rlen = templen - (a_len - shift);
+	memcpy(r, temp + (a_len - shift), rlen * sizeof(dig_t));
+
+	// Try b+1, b+2
+
+	// temp1 = b^2
+	bi_mul2(r, rlen, r, rlen, temp, &templen);
+
+	while (1)
+	{
+		//  Actually, this block runs twice at most.
+
+		int cmp;
+
+		// b^2 + 2*b + 1 = (b+1)^2
+		// temp1 <= (b+1)^2
+		bi_add1(temp, &templen, r, rlen);
+		bi_add1(temp, &templen, r, rlen);
+		bi_inc(temp, &templen);
+
+		// Compare A and (b+1)^2
+		cmp = __cmp_shift(temp, templen, a, alen, shift);
+
+		// A < (b+1)^2
+		// return value is b
+		if (cmp > 0)
+		{
+			break;
+		}
+
+		// A >= (b+1)^2
+		// b <-- b+1
+		bi_inc(r, &rlen);
+
+		// Lucky. A == (b+1)^2
+		if (cmp == 0)
 		{
 			break;
 		}
 	}
-	bi_free(x2);
+	*prlen = rlen;
+	bi_free(temp);
+	bi_free(num2);
+	bi_free(num1);
 }
 
 void	bi_pow(const dig_t* a, len_t alen, len_t b, dig_t* c, len_t* clen)
