@@ -130,7 +130,7 @@
 		#define		RADIX		10000000000000000
 		#define		LOG10_RADIX	16
 		#define		ARI_INV_3	6666666666666667	// For div 3N by 3
-	#elif defined(__LP64__)		// Base 10^8 for 64-bit
+	#elif defined(__LP64__)		// Base 10^9 for 64-bit
 		typedef		int32_t		dig_t;
 		typedef		int64_t		ddig_t;
 		typedef		int64_t		len_t;
