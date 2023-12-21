@@ -48,7 +48,7 @@
 //#define		FORCE_BASE	1000000
 //#define		FORCE_BASE	10000000
 //#define		FORCE_BASE	100000000
-//#define		FORCE_BASE	1000000000
+#define		FORCE_BASE	1000000000
 //#define		FORCE_BASE	1000000000000000
 
 #if FORCE_BASE == 10			// Force base 10
@@ -108,9 +108,9 @@
 		#define		LOG10_RADIX	8
 		#define		ARI_INV_3	66666667	// For div 3N by 3
 #elif FORCE_BASE == 1000000000	// Force base 10^9
-		typedef		int64_t		dig_t;
-		typedef		__int128	ddig_t;
-		typedef		__int128	len_t;
+		typedef		int32_t		dig_t;
+		typedef		int64_t		ddig_t;
+		typedef		int64_t		len_t;
 		#define		RADIX		1000000000
 		#define		LOG10_RADIX	9
 		#define		ARI_INV_3	666666667	// For div 3N by 3
