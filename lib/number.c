@@ -1434,6 +1434,10 @@ bc_num2long (bc_num num, len_t* ret)
 	{
 		val = RADIX*val + d[i];
 	}
+	if(num->n_sign < 0)
+	{
+		val = -val;
+	}
 	*ret = val;
 	return 1;
 }
