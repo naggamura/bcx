@@ -130,7 +130,9 @@ bc_dec_len(bc_num num)
 	else
 	{
 		len_t	rscale = TO_SCALE(num->n_dec_scale);
-		len_t	len = bi_b10_len(num->n_value + (num->n_scale - rscale), rscale + num->n_len);
+		//len_t	len = bi_b10_len(num->n_value + (num->n_scale - rscale), rscale + num->n_len);
+		len_t	len = bi_b10_len(num->n_value + num->n_scale, num->n_len) + num->n_dec_scale;
+		//printf("%d, %d, %d\n", num->n_len, num->n_scale, num->n_dec_scale);
 		if(len <= 0)
 		{
 			len = 1;
