@@ -30,6 +30,7 @@
 #include	<memory.h>
 
 #include	<config.h>
+
 #ifdef	PARAL_MULT	// Supports multi-threaded multiplication.
 	#include	<pthread.h>
 #endif
@@ -452,12 +453,12 @@ void	bi_add1(
 			d += b[i];
 			if(d >= RADIX)
 			{
-				a[i] = d - RADIX;
+				a[i] = (dig_t)(d - RADIX);
 				d = 1;
 			}
 			else
 			{
-				a[i] = d;
+				a[i] = (dig_t)d;
 				d = 0;
 			}
 		}
@@ -467,12 +468,12 @@ void	bi_add1(
 			d += b[i];
 			if(d >= RADIX)
 			{
-				a[i] = d - RADIX;
+				a[i] = (dig_t)(d - RADIX);
 				d = 1;
 			}
 			else
 			{
-				a[i] = d;
+				a[i] = (dig_t)d;
 				d = 0;
 			}
 		}
@@ -490,12 +491,12 @@ void	bi_add1(
 			d += b[i];
 			if(d >= RADIX)
 			{
-				a[i] = d - RADIX;
+				a[i] = (dig_t)(d - RADIX);
 				d = 1;
 			}
 			else
 			{
-				a[i] = d;
+				a[i] = (dig_t)d;
 				d = 0;
 			}
 		}
@@ -505,12 +506,12 @@ void	bi_add1(
 			d += a[i];
 			if(d >= RADIX)
 			{
-				a[i] = d - RADIX;
+				a[i] = (dig_t)(d - RADIX);
 				d = 1;
 			}
 			else
 			{
-				a[i] = d;
+				a[i] = (dig_t)d;
 				d = 0;
 			}
 		}
@@ -553,12 +554,12 @@ void	bi_add2(
 		d += b[i];
 		if(d >= RADIX)
 		{
-			c[i] = d - RADIX;
+			c[i] = (dig_t)(d - RADIX);
 			d = 1;
 		}
 		else
 		{
-			c[i] = d;
+			c[i] = (dig_t)d;
 			d = 0;
 		}
 	}
@@ -568,12 +569,12 @@ void	bi_add2(
 		d += b[i];
 		if(d >= RADIX)
 		{
-			c[i] = d - RADIX;
+			c[i] = (dig_t)(d - RADIX);
 			d = 1;
 		}
 		else
 		{
-			c[i] = d;
+			c[i] = (dig_t)d;
 			d = 0;
 		}
 	}
@@ -637,12 +638,12 @@ void	bi_sub1(
 		d -= b[i];
 		if(d >= 0)
 		{
-			a[i] = d;
+			a[i] = (dig_t)d;
 			d = 0;
 		}
 		else
 		{
-			a[i] = d + RADIX;
+			a[i] = (dig_t)(d + RADIX);
 			d = -1;
 		}
 	}
@@ -652,12 +653,12 @@ void	bi_sub1(
 		d += a[i];
 		if(d >= 0)
 		{
-			a[i] = d;
+			a[i] = (dig_t)d;
 			d = 0;
 		}
 		else
 		{
-			a[i] = d + RADIX;
+			a[i] = (dig_t)(d + RADIX);
 			d = -1;
 		}
 	}
@@ -685,12 +686,12 @@ void	bi_sub2(
 		d -= b[i];
 		if(d >= 0)
 		{
-			c[i] = d;
+			c[i] = (dig_t)d;
 			d = 0;
 		}
 		else
 		{
-			c[i] = d + RADIX;
+			c[i] = (dig_t)(d + RADIX);
 			d = -1;
 		}
 	}
@@ -700,12 +701,12 @@ void	bi_sub2(
 		d += a[i];
 		if(d >= 0)
 		{
-			c[i] = d;
+			c[i] = (dig_t)d;
 			d = 0;
 		}
 		else
 		{
-			c[i] = d + RADIX;
+			c[i] = (dig_t)(d + RADIX);
 			d = -1;
 		}
 	}
@@ -776,7 +777,8 @@ void	bi_elementary_mul(
 		blen = tl;
 	}
 
-	memset(c, 0, (alen + blen) * sizeof(dig_t));
+	memset(c, 0, (size_t)(alen + blen) * sizeof(dig_t));
+	k = 0;
 	for (i = 0; i < blen; i++)
 	{
 		bdig = b[i];
@@ -916,11 +918,11 @@ static void		__mul_karatsuba(
 			ty = bi_malloc(m+1, __LINE__);
 
 			// z1 = (x1+x0)*(y1+y0)-z2-z0;
-			memcpy(tx, x1, sizeof(dig_t)*x1len);
+			memcpy(tx, x1, (size_t)x1len * sizeof(dig_t));
 			txlen = x1len;
 			bi_add1(tx, &txlen, x0, x0len);
 
-			memcpy(ty, y1, sizeof(dig_t)*y1len);
+			memcpy(ty, y1, (size_t)y1len * sizeof(dig_t));
 			tylen = y1len;
 			bi_add1(ty, &tylen, y0, y0len);
 
@@ -1016,12 +1018,12 @@ static void		__mul2_one_digit(
 	for(i = 0; i < alen; i++)
 	{
 		d += a[i]*bb;
-		c[i] = d%RADIX;
+		c[i] = (dig_t)(d%RADIX);
 		d /= RADIX;
 	}
 	if(d)
 	{
-		c[i++] = d;
+		c[i++] = (dig_t)d;
 	}
 	*clen = i;
 }
@@ -1046,7 +1048,7 @@ static void		__div_by_2(
 		}
 		if(d)
 		{
-			a[j++] = d;
+			a[j++] = (dig_t)d;
 		}
 	}
 	*alen = j;
@@ -1069,7 +1071,7 @@ static void		__div_by_3(
 	for(i = 0; i < aalen && tlen > 0; i++)
 	{
 		d = (((ddig_t)ARI_INV_3)*(*t))%RADIX;
-		*(t++) = d;
+		*(t++) = (dig_t)d;
 		d *= 3;
 		tlen--;
 		if(d >= RADIX)
@@ -1289,7 +1291,7 @@ static void		__mul_toomcook3(
 
 		// r3  = (r(−2) - r(1))/3
 		z3 = bi_malloc(2*(m+1), __LINE__);
-		memcpy(z3, txym2, sizeof(dig_t)*txym2len);
+		memcpy(z3, txym2, (size_t)txym2len * sizeof(dig_t));
 		z3len = txym2len;
 		sz3 = stxym2;
 		bi_free(txym2);
@@ -1298,7 +1300,7 @@ static void		__mul_toomcook3(
 
 		// r1 = (r(1) - r(−1))/2
 		z1 = bi_malloc(2*(m+1), __LINE__);
-		memcpy(z1, txyp1, sizeof(dig_t)*txyp1len);
+		memcpy(z1, txyp1, (size_t)txyp1len * sizeof(dig_t));
 		z1len = txyp1len;
 		sz1 = stxyp1;
 		bi_free(txyp1);
@@ -1307,7 +1309,7 @@ static void		__mul_toomcook3(
 
 		// r2 = r(−1) - r0
 		z2 = bi_malloc(2*(m+1), __LINE__);
-		memcpy(z2, txym1, sizeof(dig_t)*txym1len);
+		memcpy(z2, txym1, (size_t)txym1len * sizeof(dig_t));
 		z2len = txym1len;
 		sz2 = stxym1;
 		bi_free(txym1);
@@ -1412,7 +1414,7 @@ static event	__g_event_put, __g_event_get;
 static mul_info		__g_mi[MAX_PARAL_CNT];
 static int	__g_mi_idx;
 
-static void*	__mul_thread_proc(void* pParam)
+static void*	__mul_thread_proc(void* __unused pParam)
 {
 	while(1)
 	{
@@ -1422,7 +1424,7 @@ static void*	__mul_thread_proc(void* pParam)
 		event_dec(&__g_event_put);
 
 		pthread_mutex_lock(&__g_lock);
-		for(i = 0; i < sizeof(__g_mi)/sizeof(__g_mi[0]); i++)
+		for(i = 0; i < (int)(sizeof(__g_mi)/sizeof(__g_mi[0])); i++)
 		{
 			if(1 == __g_mi[i].state)
 			{
@@ -1482,7 +1484,7 @@ static void		__mul_toomcook3_paral(
 		len_t	x0len = 0, x1len = 0, x2len = 0;
 		const dig_t	*y0, *y1, *y2;
 		len_t	y0len = 0, y1len = 0, y2len = 0;
-		dig_t	*z0, *z1, *z2, *z3, *z4;
+		dig_t	*z0 = NULL, *z1, *z2, *z3, *z4 = NULL;
 		len_t	z0len = 0, z1len = 0, z2len = 0, z3len = 0, z4len = 0;
 		int		/*sz0, */sz1, sz2, sz3/*, sz4*/;
 
@@ -1490,7 +1492,7 @@ static void		__mul_toomcook3_paral(
 		len_t	txm2len = 0, tym2len = 0, txm1len = 0, tym1len = 0, txp1len = 0, typ1len = 0;
 		int		stxm2 = 1, stym2 = 1, stxm1 = 1, stym1 = 1, stxp1 = 1, styp1 = 1;
 
-		dig_t	*txym2, *txym1, *txyp1;
+		dig_t	*txym2 = NULL, *txym1 = NULL, *txyp1 = NULL;
 		len_t	txym2len = 0, txym1len = 0, txyp1len = 0;
 		int		stxym2 = 1, stxym1 = 1, stxyp1 = 1;
 
@@ -1532,7 +1534,10 @@ static void		__mul_toomcook3_paral(
 				{
 					if(z0len > 0)
 					{
-						memcpy(c, z0, sizeof(dig_t)*z0len);
+						memcpy(c, z0, (size_t)z0len * sizeof(dig_t));
+					}
+					if(z0)
+					{
 						bi_free(z0);
 					}
 					z0 = c;
@@ -1690,28 +1695,37 @@ static void		__mul_toomcook3_paral(
 
 		// r3  = (r(−2) - r(1))/3
 		z3 = bi_malloc(2*(m+1), __LINE__);
-		memcpy(z3, txym2, sizeof(dig_t)*txym2len);
+		memcpy(z3, txym2, (size_t)txym2len * sizeof(dig_t));
 		z3len = txym2len;
 		sz3 = stxym2;
-		bi_free(txym2);
+		if(txym2)
+		{
+			bi_free(txym2);
+		}
 		__sadd(&sz3, z3, &z3len, -stxyp1, txyp1, txyp1len);
 		__div_by_3(z3, &z3len);
 
 		// r1 = (r(1) - r(−1))/2
 		z1 = bi_malloc(2*(m+1), __LINE__);
-		memcpy(z1, txyp1, sizeof(dig_t)*txyp1len);
+		memcpy(z1, txyp1, (size_t)txyp1len * sizeof(dig_t));
 		z1len = txyp1len;
 		sz1 = stxyp1;
-		bi_free(txyp1);
+		if(txyp1)
+		{
+			bi_free(txyp1);
+		}
 		__sadd(&sz1, z1, &z1len, -stxym1, txym1, txym1len);
 		__div_by_2(z1, &z1len);
 
 		// r2 = r(−1) - r0
 		z2 = bi_malloc(2*(m+1), __LINE__);
-		memcpy(z2, txym1, sizeof(dig_t)*txym1len);
+		memcpy(z2, txym1, (size_t)txym1len * sizeof(dig_t));
 		z2len = txym1len;
 		sz2 = stxym1;
-		bi_free(txym1);
+		if(txym1)
+		{
+			bi_free(txym1);
+		}
 		__sadd(&sz2, z2, &z2len, -1, z0, z0len);
 
 		// r3 = (r2 - r3)/2 + r4 + r4
@@ -1736,7 +1750,10 @@ static void		__mul_toomcook3_paral(
 		bi_add_shift(c, clen, z3, z3len, 3*m);
 		bi_free(z3);
 		bi_add_shift(c, clen, z4, z4len, 4*m);
-		bi_free(z4);
+		if(z4)
+		{
+			bi_free(z4);
+		}
 	}
 }
 
@@ -1794,9 +1811,9 @@ static void		__mul_toomcook3_trigger(
 			{
 				dig_t *xx0, *yy0;
 				xx0 = bi_malloc(x0len, __LINE__);
-				memcpy(xx0, x0, x0len*sizeof(dig_t));
+				memcpy(xx0, x0, (size_t)x0len * sizeof(dig_t));
 				yy0 = bi_malloc(y0len, __LINE__);
-				memcpy(yy0, y0, y0len*sizeof(dig_t));
+				memcpy(yy0, y0, (size_t)y0len * sizeof(dig_t));
 
 				mi->state = 1;
 				mi->a = xx0;
@@ -1839,9 +1856,9 @@ static void		__mul_toomcook3_trigger(
 			{
 				dig_t *xx2, *yy2;
 				xx2 = bi_malloc(x2len, __LINE__);
-				memcpy(xx2, x2, x2len*sizeof(dig_t));
+				memcpy(xx2, x2, (size_t)x2len * sizeof(dig_t));
 				yy2 = bi_malloc(y2len, __LINE__);
-				memcpy(yy2, y2, y2len*sizeof(dig_t));
+				memcpy(yy2, y2, (size_t)y2len * sizeof(dig_t));
 
 				mi->state = 1;
 				mi->a = xx2;
@@ -2193,28 +2210,25 @@ static void		__basic_div(
 	const dig_t* restrict b, len_t blen,
 	dig_t* restrict q, len_t* restrict pqlen)
 {
-	len_t	i, ttlen, gap;
-	len_t	alen = *palen;
-	dig_t	*tt;
-	ddig_t	divisor, m, dd, p10;
+	len_t i, j, gap;
+	len_t alen = *palen;
+	dig_t *aa;
+	ddig_t divisor, m, dd/*, p10*/;
+#if 0
+    m = b[blen-1];
+    while(m < RADIX/10)
+    {
+        m *= 10;
+    }
+    p10 = m/b[blen-1];
 
-/*
-	m = b[blen-1];
-	while(m < RADIX/10)
-	{
-		m *= 10;
-	}
-	p10 = m/b[blen-1];
-
-	if(p10 > 1)
-	{
-		__mul1_one_digit(a, &alen, p10);
-		__mul1_one_digit(b, &blen, p10);
-	}
-*/
-	p10 = 1;
+    if(p10 > 1)
+    {
+        __mul1_one_digit(a, &alen, p10);
+        __mul1_one_digit(b, &blen, p10);
+    }
+#endif
 	gap = alen - blen;
-	tt = bi_malloc(blen+1, __LINE__);
 
 	divisor = b[blen-1];
 	for(i = blen-2; i >= 0 && !b[i]; i--)
@@ -2228,7 +2242,10 @@ static void		__basic_div(
 
 	for(i = gap; i >= 0; i--)
 	{
-		q[i] = 0;
+		ddig_t ddig;
+
+		aa = a + i;
+		ddig = 0;
 		while(__cmp_shift(a, alen, b, blen, i) >= 0)
 		{
 			if(alen > blen+i)
@@ -2245,17 +2262,47 @@ static void		__basic_div(
 				m = 1;
 			}
 
-			q[i] += m;
-
-			__mul2_one_digit(b, blen, m, tt, &ttlen);
-			bi_sub_shift(a, &alen, tt, ttlen, i);
+			dd = 0;
+			for(j = 0; j < blen; j++)
+			{
+				dd += (ddig_t)aa[j] - m*b[j];
+				aa[j] = dd % RADIX;
+				if(aa[j] < 0)
+				{
+					aa[j] += RADIX;
+					dd -= aa[j];
+				}
+				else
+				{
+				}
+				dd /= RADIX;
+			}
+			for(; j+i < alen; j++)
+			{
+				dd += aa[j];
+				aa[j] = dd % RADIX;
+				if(aa[j] < 0)
+				{
+					aa[j] += RADIX;
+					dd -= aa[j];
+				}
+				dd /= RADIX;
+			}
+			for(j = alen-1; j >= 0 && !a[j]; j--)
+			{
+				;
+			}
+			alen = j+1;
+			ddig += m;
 		}
+		q[i] = (dig_t)ddig;
 	}
 	for(i = gap; i >= 0 && !q[i]; i--)
 	{
 		;
 	}
 	*pqlen = i+1;
+#if 0
 	if(p10 > 1 && alen > 0)
 	{
 		for(i = 0; i < alen-1; i++)
@@ -2268,9 +2315,20 @@ static void		__basic_div(
 			alen--;
 		}
 	}
+	if(p10 > 1 && blen > 0)
+	{
+		for(i = 0; i < blen-1; i++)
+		{
+			((dig_t*)b)[i] = (b[i+1]*(RADIX/p10))%RADIX + b[i]/p10;
+		}
+		((dig_t*)b)[i] /= p10;
+		if(!b[i])
+		{
+			blen--;
+		}
+	}
+#endif
 	*palen = alen;
-
-	bi_free(tt);
 }
 
 #if 0
@@ -2421,7 +2479,7 @@ void	bi_div1(
 	tnum = bi_malloc(prec+1, __LINE__);
 
 	// tnum <-- 1 * R^prec
-	memset(tnum, 0, prec*sizeof(dig_t));
+	memset(tnum, 0, (size_t)prec * sizeof(dig_t));
 	tnum[prec] = 1;
 	tnumlen = prec+1;
 
@@ -2436,7 +2494,7 @@ void	bi_div1(
 		len_t tblen, trunc_len = blen - MAX_BASIC_DIV_B_LEN;
 
 		tblen = MAX_BASIC_DIV_B_LEN;
-		memcpy(tb, b + trunc_len, tblen*sizeof(dig_t));
+		memcpy(tb, b + trunc_len, (size_t)tblen * sizeof(dig_t));
 		for(i = 0; i < trunc_len && !b[i]; i++) { ; }
 		if(i < trunc_len)
 		{
@@ -2463,15 +2521,15 @@ void	bi_div1(
 		}
 		if(i < prec)
 		{
-			tnum[i] = RADIX - tnum[i];
+			tnum[i] = (dig_t)(RADIX - tnum[i]);
 			i++;
 			for(; i < tnumlen; i++)
 			{
-				tnum[i] = RADIX-1 - tnum[i];
+				tnum[i] = (dig_t)(RADIX-1 - tnum[i]);
 			}
 			for(; i < prec; i++)
 			{
-				tnum[i] = RADIX-1;
+				tnum[i] = (dig_t)(RADIX-1);
 			}
 		}
 		tnum[prec] = 1;
@@ -2488,7 +2546,7 @@ void	bi_div1(
 
 		// y1 <-- y1*( 2*R^prec - b*y1 ) * R^(-prec)
 		y1len = y2len-prec;
-		memcpy(y1, y2+prec, y1len*sizeof(dig_t));
+		memcpy(y1, y2+prec, (size_t)y1len * sizeof(dig_t));
 	}
 
 	// y2 <-- a * { approx. (1/b)*R^prec }
@@ -2498,7 +2556,7 @@ void	bi_div1(
 	// cc <-- { approx. (a/b) * R^prec } * R^(-prec)
 	// cc := ( approx. a/b }
 	qlen = y2len-prec;
-	memcpy(q, y2+prec, qlen*sizeof(dig_t));
+	memcpy(q, y2+prec, (size_t)qlen * sizeof(dig_t));
 
 	// y1 <-- b * ( approx. a/b }
 	// y1 := { approx. a }
@@ -2535,7 +2593,7 @@ void	bi_div2(
 	dig_t*	rr = bi_malloc(alen, __LINE__);
 	len_t		rrlen;
 
-	memcpy(rr, a, sizeof(dig_t)*alen);
+	memcpy(rr, a, (size_t)alen * sizeof(dig_t));
 	rrlen = alen;
 
 	bi_div1(rr, &rrlen, b, blen, q, qlen);
@@ -2661,7 +2719,7 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 //printf("tempcap = %lu, num1cap = %lu, num2cap = %lu\n", temp.cap, num1.cap, num2.cap);
 
 	num2len = trunc_len / 2;
-	memset(num2, 0, num2len * sizeof(dig_t));
+	memset(num2, 0, (size_t)num2len * sizeof(dig_t));
 	if (sqrt_dd * sqrt_dd < dd)
 	{
 		sqrt_dd += 1;
@@ -2688,7 +2746,7 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 	}
 
 	// BASE^a_len
-	memset(temp, 0, a_len * sizeof(dig_t));
+	memset(temp, 0, (size_t)a_len * sizeof(dig_t));
 	temp[a_len] = 1;
 	templen = a_len + 1;
 
@@ -2713,7 +2771,7 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 		// == ( aa * BASE^a_shift * x^2 ) / BASE^a_len
 		// == A * x^2 * BASE^(-alen)
 		num2len = templen - (a_len - shift);
-		memcpy(num2, temp + (a_len - shift), num2len * sizeof(dig_t));
+		memcpy(num2, temp + (a_len - shift), (size_t)num2len * sizeof(dig_t));
 
 		// 3*BASE^a_len - A*x^2*BASE^(-alen)
 		for (i = 0; i < a_len && !num2[i]; i++)
@@ -2762,7 +2820,7 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 		}
 
 		num1len = shelllen;
-		memcpy(num1, shell, num1len * sizeof(dig_t));
+		memcpy(num1, shell, (size_t)num1len * sizeof(dig_t));
 	}
 
 	// b <-- ( x * aa ) / BASE^(a_len - a_shift)
@@ -2771,7 +2829,7 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 	// --> about sqrt(A)
 	bi_mul2(a, alen, num1, num1len, temp, &templen);
 	rlen = templen - (a_len - shift);
-	memcpy(r, temp + (a_len - shift), rlen * sizeof(dig_t));
+	memcpy(r, temp + (a_len - shift), (size_t)rlen * sizeof(dig_t));
 
 	// Try b+1, b+2
 
@@ -2837,7 +2895,7 @@ void	bi_pow(const dig_t* a, len_t alen, len_t b, dig_t* c, len_t* clen)
 	p1 = bi_malloc(alen*b + 1, __LINE__);
 	p2 = bi_malloc(alen*b + 1, __LINE__);
 
-	memcpy(p1, a, alen*sizeof(dig_t));
+	memcpy(p1, a, (size_t)alen * sizeof(dig_t));
 	p1len = alen;
 
 	while(1)
@@ -2943,7 +3001,7 @@ void	bi_fac(len_t u, len_t v, dig_t** n, len_t *nlen, len_t *nzeros)
 
 			r = bi_malloc(alen + blen + d, __LINE__);
 			bi_mul2(a+as, alen-as, b+bs, blen-bs, r+d, &rlen);
-			memset(r, 0, sizeof(dig_t)*d);
+			memset(r, 0, (size_t)d * sizeof(dig_t));
 			rlen += d;
 		}
 		bi_free(a);
@@ -3013,7 +3071,7 @@ int		bi_init(int quiet)
 #ifdef	PARAL_MULT
 	{
 		char  *str;
-		int   procs_on_system = sysconf(_SC_NPROCESSORS_ONLN);
+		int   procs_on_system = (int)sysconf(_SC_NPROCESSORS_ONLN);
 
 		str = getenv("BC_PARAL_CNT");
 		if(str && 1 == sscanf(str, "%u", &__g_paral_cnt))
@@ -3052,7 +3110,7 @@ int		bi_init(int quiet)
 		event_init(&__g_event_put);
 		event_init(&__g_event_get);
 
-		for(i = 0; i < sizeof(__g_mi)/sizeof(__g_mi[0]); i++)
+		for(i = 0; i < (int)(sizeof(__g_mi)/sizeof(__g_mi[0])); i++)
 		{
 			__g_mi[i].state = 0;
 		}
@@ -3101,12 +3159,12 @@ void	bi_deinit(void)
 
 
 
-dig_t* bi_malloc(len_t n, int ln)
+dig_t* bi_malloc(len_t n, int __unused ln)
 {
 	if(n > 0)
 	{
 		dig_t* ptr;
-		ptr = (dig_t*)malloc(sizeof(dig_t)*n);
+		ptr = (dig_t*)malloc((size_t)n * sizeof(dig_t));
 		if(ptr)
 		{
 			return ptr;
