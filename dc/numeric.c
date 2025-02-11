@@ -581,8 +581,7 @@ set_line_max_from_environment(void)
    break the output with a "\<cr>". */
 
 static void
-out_char (ch)
-	int ch;
+out_char (int ch)
 {
 	if (ch == '\0') {
 		out_col = 0;

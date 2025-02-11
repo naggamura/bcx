@@ -2661,6 +2661,7 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 	len_t i, rlen, a_len, num1len, num2len, templen, shelllen;
 	ddig_t dd, sqrt_dd;
 	len_t trunc_len;
+	int cmp, exceeded;
 
 	if(alen <= 0)
 	{
@@ -2726,7 +2727,7 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 	}
 	else
 	{
-		for (i = 0; i < trunc_len && !a[i]; i++)
+		for (i = shift; i < trunc_len && !a[i-shift]; i++)
 		{
 			;
 		}
@@ -2758,7 +2759,7 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 //pppp(num1, num1len);
 //getchar();
 //printf("a->len = %lu, a->cap = %lu, b->len = %lu, b->cap = %lu\n", a->len, a->cap, b->len, b->cap);
-
+	exceeded = 0;
 	while (1)
 	{
 		// x^2
@@ -2769,9 +2770,24 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 
 		// ( aa * x^2 ) / BASE^(a_len - a_shift)
 		// == ( aa * BASE^a_shift * x^2 ) / BASE^a_len
-		// == A * x^2 * BASE^(-alen)
+		// == A * x^2 * BASE^(-a_len)
 		num2len = templen - (a_len - shift);
 		memcpy(num2, temp + (a_len - shift), (size_t)num2len * sizeof(dig_t));
+
+		// flr( A * x^2 * BASE^(-a_len) ) + 1
+		bi_inc(num2, &num2len);
+		if(num2len > a_len)
+		{
+			for(i = 0; i < a_len && !num2[i]; i++)
+			{
+				;
+			}
+			// num2 >= BASE^a_len. Recover num2
+			if(i < a_len)
+			{
+				bi_dec(num2, &num2len);
+			}
+		}
 
 		// 3*BASE^a_len - A*x^2*BASE^(-alen)
 		for (i = 0; i < a_len && !num2[i]; i++)
@@ -2804,23 +2820,26 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 		shelllen = templen - a_len;
 		shell = temp + a_len;
 
-		// flr( ( y*(3*BASE^a_len - flr(A*y^2*BASE^(-a_len)) ) / 2 ) * BASE^(-a_len) )
-		//
-		// is equal to or greater by 1 than
-		//
-		// flr( ( y*(3*BASE^(2*a_len) - A*x^2 ) / 2 ) * BASE^(-2*a_len) )
-		//
-		// Proof --> sqrt_2.png
-		// So, decrease 1
-		bi_dec(shell, &shelllen);
+		if(exceeded)
+		{
+			bi_dec(shell, &shelllen);
+			exceeded = 0;
+		}
 
-		if (bi_cmp(shell, shelllen, num1, num1len) <= 0)
+		cmp = bi_cmp(shell, shelllen, num1, num1len);
+		if(cmp > 0)
+		{
+			num1len = shelllen;
+			memcpy(num1, shell, (size_t)num1len * sizeof(dig_t));
+		}
+		else if(cmp < 0)
+		{
+			exceeded = 1;
+		}
+		else
 		{
 			break;
 		}
-
-		num1len = shelllen;
-		memcpy(num1, shell, (size_t)num1len * sizeof(dig_t));
 	}
 
 	// b <-- ( x * aa ) / BASE^(a_len - a_shift)
@@ -2838,9 +2857,7 @@ void	bi_sqrt(const dig_t* a, len_t alen, len_t shift, dig_t* r, len_t* prlen)
 
 	while (1)
 	{
-		//  Actually, this block runs twice at most.
-
-		int cmp;
+		// Actually, this block runs once at most.
 
 		// b^2 + 2*b + 1 = (b+1)^2
 		// temp1 <= (b+1)^2
